@@ -1,0 +1,40 @@
+name: Package FongMi media source
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [ main ]
+
+jobs:
+  package:
+    runs-on: ubuntu-latest
+
+    steps:
+      # 直接拉 FongMi/media 到 media3-ass/，含所有 submodule
+      - name: Checkout original FongMi libass source and its native submodules
+        uses: actions/checkout@v4
+        with:
+          repository: FongMi/media
+          ref: 9dae39e9689ee305c83f94bd11cf3bcecb9d6171
+          path: media3-ass
+          fetch-depth: 1
+          submodules: recursive
+
+      # 清理 git 元数据，压缩包更干净
+      - name: Strip .git metadata
+        run: |
+          find media3-ass -name ".git" -exec rm -rf {} + 2>/dev/null || true
+
+      # 打包
+      - name: Create ZIP archive
+        run: |
+          zip -r media3-ass.zip media3-ass
+          ls -lh media3-ass.zip
+
+      # 上传为 Artifact
+      - name: Upload ZIP as artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: fongmi-media-source
+          path: media3-ass.zip
+          retention-days: 30
