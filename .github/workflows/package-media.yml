@@ -1,9 +1,7 @@
-name: Package FongMi exoplayer_libass
+name: Package media3 git dir
 
 on:
   workflow_dispatch:
-  push:
-    branches: [ main ]
 
 jobs:
   package:
@@ -18,20 +16,17 @@ jobs:
           path: media3-ass
           fetch-depth: 1
           submodules: recursive
+          persist-credentials: false     # 关键：不把 token 写进 .git/config
 
-      # 只清目标目录内的 .git（如果它是 submodule，会有 .git gitfile）
-      - name: Strip .git metadata
+      - name: Create ZIP archive (.git only)
         run: |
-          find media3-ass/libraries/exoplayer_libass -name ".git" -exec rm -rf {} + 2>/dev/null || true
-
-      - name: Create ZIP archive
-        run: |
-          zip -r exoplayer_libass.zip media3-ass/libraries/exoplayer_libass
-          ls -lh exoplayer_libass.zip
+          zip -r media3-git.zip media3-ass/.git
+          ls -lh media3-git.zip
+          unzip -l media3-git.zip | head -30
 
       - name: Upload ZIP as artifact
         uses: actions/upload-artifact@v4
         with:
-          name: exoplayer-libass-source
-          path: exoplayer_libass.zip
+          name: media3-git-dir
+          path: media3-git.zip
           retention-days: 30
