@@ -1,34 +1,37 @@
-name: Probe commit branch
+name: Package FongMi exoplayer_libass
 
 on:
   workflow_dispatch:
+  push:
+    branches: [ main ]
 
 jobs:
-  probe:
+  package:
     runs-on: ubuntu-latest
-    env:
-      GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-      TARGET: 9dae39e9689ee305c83f94bd11cf3bcecb9d6171
-      REPO: FongMi/media
 
     steps:
-      - name: Which branch HEAD is on this commit (API)
-        run: |
-          echo "== branches-where-head =="
-          gh api "repos/$REPO/commits/$TARGET/branches-where-head" --jq '.[].name' || true
+      - name: Checkout original FongMi libass source and its native submodules
+        uses: actions/checkout@v4
+        with:
+          repository: FongMi/media
+          ref: 9dae39e9689ee305c83f94bd11cf3bcecb9d6171
+          path: media3-ass
+          fetch-depth: 1
+          submodules: recursive
 
-      - name: Which branch(es) contain this commit (ls-remote)
+      # 只清目标目录内的 .git（如果它是 submodule，会有 .git gitfile）
+      - name: Strip .git metadata
         run: |
-          echo "== branch HEAD == target =="
-          git ls-remote --heads "https://github.com/$REPO.git" | grep "$TARGET" || echo "(no branch HEAD points to $TARGET)"
+          find media3-ass/libraries/exoplayer_libass -name ".git" -exec rm -rf {} + 2>/dev/null || true
 
-      - name: List all branches
+      - name: Create ZIP archive
         run: |
-          echo "== all branches =="
-          git ls-remote --heads "https://github.com/$REPO.git" | sed 's#.*refs/heads/##'
+          zip -r exoplayer_libass.zip media3-ass/libraries/exoplayer_libass
+          ls -lh exoplayer_libass.zip
 
-      - name: Check if it's a tag
-        run: |
-          echo "== tags pointing at target =="
-          git ls-remote --tags "https://github.com/$REPO.git" \
-            | grep "$TARGET" || echo "(no tag points to $TARGET)"
+      - name: Upload ZIP as artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: exoplayer-libass-source
+          path: exoplayer_libass.zip
+          retention-days: 30
